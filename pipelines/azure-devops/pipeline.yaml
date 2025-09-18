@@ -1,0 +1,66 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  dockerRegistryServiceConnection: 'your-docker-registry-service-connection'
+  imageRepository: 'your-image-repository'
+  kubernetesServiceConnection: 'your-kubernetes-service-connection'
+  resourceGroupName: 'ai-powered-reliability-rg'
+  clusterName: 'ai-powered-reliability-aks'
+  helmChartPath: 'k8s/charts/app'
+
+stages:
+- stage: Build
+  displayName: 'Build and push Docker images'
+  jobs:
+  - job: Build
+    displayName: 'Build'
+    steps:
+    - task: Docker@2
+      displayName: 'Build and push .NET app'
+      inputs:
+        command: buildAndPush
+        repository: '$(imageRepository)/app'
+        dockerfile: 'src/app/Dockerfile'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(Build.BuildId)
+    - task: Docker@2
+      displayName: 'Build and push React app'
+      inputs:
+        command: buildAndPush
+        repository: '$(imageRepository)/web'
+        dockerfile: 'src/web/Dockerfile'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(Build.BuildId)
+
+- stage: Deploy
+  displayName: 'Deploy to AKS'
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy'
+    steps:
+    - task: Kubernetes@1
+      displayName: 'Set Kubernetes context'
+      inputs:
+        connectionType: 'Azure Resource Manager'
+        azureSubscriptionEndpoint: 'your-azure-subscription'
+        azureResourceGroup: '$(resourceGroupName)'
+        kubernetesCluster: '$(clusterName)'
+    - task: HelmDeploy@0
+      displayName: 'Deploy Helm chart'
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceConnection: '$(kubernetesServiceConnection)'
+        command: 'upgrade'
+        chartType: 'FilePath'
+        chartPath: '$(helmChartPath)'
+        releaseName: 'ai-powered-reliability'
+        overrideValues: |
+          image.repository=$(imageRepository)/web,image.tag=$(Build.BuildId)
+

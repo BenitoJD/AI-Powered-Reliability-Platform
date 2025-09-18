@@ -1,0 +1,7 @@
+langchain
+openai
+qdrant-client
+langgraph
+langchain-community
+langchain-openai
+langchain-core

@@ -1,0 +1,21 @@
+# This is a placeholder for Dynatrace configuration.
+# In a real-world scenario, you would use the Dynatrace API
+# or the Dynatrace Configuration as Code (Monaco) tool to manage
+# your monitoring configuration.
+
+# Example of a calculated service metric
+calculated-metrics:
+  - metric:
+      name: "calc:service.request_failure_rate"
+      metricKey: "calc:service.request_failure_rate"
+      unit: "Percent"
+      conditions:
+        - attribute: "SERVICE_REQUEST_FAILURE"
+          comparison:
+            type: "STRING"
+            operator: "EQUALS"
+            value: "true"
+      metricValue:
+        type: "REQUEST_COUNT"
+        aggregation: "PERCENT"
+
